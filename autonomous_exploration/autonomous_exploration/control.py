@@ -7,9 +7,11 @@ import numpy as np
 import heapq , math , random , yaml
 import scipy.interpolate as si
 import sys , threading , time
+import os
+from ament_index_python.packages import get_package_share_directory
 
-
-with open("src/autonomous_exploration/config/params.yaml", 'r') as file:
+params_file = os.path.join(get_package_share_directory("autonomous_exploration"), "config", "params.yaml")
+with open(params_file, 'r') as file:
     params = yaml.load(file, Loader=yaml.FullLoader)
 
 lookahead_distance = params["lookahead_distance"]
@@ -334,7 +336,7 @@ class navigationControl(Node):
         self.subscription = self.create_subscription(Odometry,'odom',self.odom_callback,10)
         self.subscription = self.create_subscription(LaserScan,'scan',self.scan_callback,10)
         self.publisher = self.create_publisher(Twist, 'cmd_vel', 10)
-        print("[BILGI] KESİF MODU AKTİF")
+        print("[INFO] EXPLORATION MODE ACTIVE")
         self.kesif = True
         threading.Thread(target=self.exp).start() #Kesif fonksiyonunu thread olarak calistirir.
         
@@ -353,13 +355,13 @@ class navigationControl(Node):
                 else:
                     self.path = pathGlobal
                 if isinstance(self.path, int) and self.path == -1:
-                    print("[BILGI] KESİF TAMAMLANDI")
+                    print("[INFO] EXPLORATION IS COMPLETED")
                     sys.exit()
                 self.c = int((self.path[-1][0] - self.originX)/self.resolution) 
                 self.r = int((self.path[-1][1] - self.originY)/self.resolution) 
                 self.kesif = False
                 self.i = 0
-                print("[BILGI] YENI HEDEF BELİRLENDI")
+                print("[INFO] A NEW TARGET HAS BEEN DETERMINED")
                 t = pathLength(self.path)/speed
                 t = t - 0.2 #x = v * t formülüne göre hesaplanan sureden 0.2 saniye cikarilir. t sure sonra kesif fonksiyonu calistirilir.
                 self.t = threading.Timer(t,self.target_callback) #Hedefe az bir sure kala kesif fonksiyonunu calistirir.
@@ -374,7 +376,7 @@ class navigationControl(Node):
                     v = 0.0
                     w = 0.0
                     self.kesif = True
-                    print("[BILGI] HEDEFE ULASILDI")
+                    print("[INFO] GOAL ACHIEVED")
                     self.t.join() #Thread bitene kadar bekle.
                 twist.linear.x = v
                 twist.angular.z = w
